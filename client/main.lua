@@ -1,3 +1,5 @@
+ESX = nil
+
 local PersonalMenu = {
 	ItemSelected = {},
 	ItemIndex = {},
@@ -17,10 +19,6 @@ local PersonalMenu = {
 	},
 	DoorIndex = 1,
 	DoorList = {_U('vehicle_door_frontleft'), _U('vehicle_door_frontright'), _U('vehicle_door_backleft'), _U('vehicle_door_backright')},
-	GPSIndex = 1,
-	GPSList = {},
-	VoiceIndex = 2,
-	VoiceList = {}
 }
 
 Player = {
@@ -39,6 +37,10 @@ Player = {
 }
 
 local societymoney, societymoney2 = nil, nil
+local SimTab = {}
+local number = {}
+local NumberSelected = {}
+local myPhoneNumber = ''
 
 Citizen.CreateThread(function()
 	while ESX == nil do
@@ -50,12 +52,6 @@ Citizen.CreateThread(function()
 		Citizen.Wait(10)
 	end
 
-	if Config.DoubleJob then
-		while ESX.GetPlayerData().job2 == nil do
-			Citizen.Wait(10)
-		end
-	end
-
 	ESX.PlayerData = ESX.GetPlayerData()
 
 	while actualSkin == nil do
@@ -64,10 +60,6 @@ Citizen.CreateThread(function()
 	end
 
 	RefreshMoney()
-
-	if Config.DoubleJob then
-		RefreshMoney2()
-	end
 
 	PersonalMenu.WeaponData = ESX.GetWeaponList()
 
@@ -79,23 +71,15 @@ Citizen.CreateThread(function()
 		end
 	end
 
-	for i = 1, #Config.GPS, 1 do
-		table.insert(PersonalMenu.GPSList, Config.GPS[i].label)
-	end
-
-	for i = 1, #Config.Voice.items, 1 do
-		table.insert(PersonalMenu.VoiceList, Config.Voice.items[i].label)
-	end
-
 	RMenu.Add('rageui', 'personal', RageUI.CreateMenu(Config.MenuTitle, _U('mainmenu_subtitle'), 0, 0, 'commonmenu', 'interaction_bgd', 255, 255, 255, 255))
 
-	RMenu.Add('personal', 'inventory', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('inventory_title')))
-	RMenu.Add('personal', 'loadout', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('loadout_title')))
 	RMenu.Add('personal', 'wallet', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('wallet_title')))
+	RMenu.Add('personal', 'documents', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('documents_title')))
+	RMenu.Add('personal', 'simmenu', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('sim_management')))
+	RMenu.Add('personal', 'loadout', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('loadout_title')))
 	RMenu.Add('personal', 'billing', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bills_title')))
 	RMenu.Add('personal', 'clothes', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('clothes_title')))
 	RMenu.Add('personal', 'accessories', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('accessories_title')))
-	RMenu.Add('personal', 'animation', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('animation_title')))
 	RMenu.Add('personal', 'vehicle', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('vehicle_title')), function()
 		if IsPedSittingInAnyVehicle(plyPed) then
 			if (GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed) then
@@ -114,18 +98,6 @@ Citizen.CreateThread(function()
 		return false
 	end)
 
-	if Config.DoubleJob then
-		RMenu.Add('personal', 'boss2', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bossmanagement2_title')), function()
-			if Config.DoubleJob then
-				if ESX.PlayerData.job2 ~= nil and ESX.PlayerData.job2.grade_name == 'boss' then
-					return true
-				end
-			end
-
-			return false
-		end)
-	end
-
 	RMenu.Add('personal', 'admin', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('admin_title')), function()
 		if Player.group ~= nil and (Player.group == 'mod' or Player.group == 'admin' or Player.group == 'superadmin' or Player.group == 'owner' or Player.group == '_dev') then
 			return true
@@ -134,40 +106,31 @@ Citizen.CreateThread(function()
 		return false
 	end)
 
-	RMenu.Add('inventory', 'actions', RageUI.CreateSubMenu(RMenu.Get('personal', 'inventory'), _U('inventory_actions_title')))
-	RMenu.Get('inventory', 'actions').Closed = function()
-		PersonalMenu.ItemSelected = nil
-	end
-
 	RMenu.Add('loadout', 'actions', RageUI.CreateSubMenu(RMenu.Get('personal', 'loadout'), _U('loadout_actions_title')))
 	RMenu.Get('loadout', 'actions').Closed = function()
 		PersonalMenu.ItemSelected = nil
 	end
 
-	for i = 1, #Config.Animations, 1 do
-		RMenu.Add('animation', Config.Animations[i].name, RageUI.CreateSubMenu(RMenu.Get('personal', 'animation'), Config.Animations[i].label))
+	RMenu.Add('simmenu', 'actions', RageUI.CreateSubMenu(RMenu.Get('personal', 'loadout'), _U('sim_actions_title')))
+	RMenu.Get('simmenu', 'actions').Closed = function()
+		NumberSelected = nil
 	end
 end)
-
-if Config.Voice.activated then
-	Citizen.CreateThread(function()
-		local voiceFixing = true
-		NetworkSetTalkerProximity(0.1)
-
-		SetTimeout(10000, function()
-			voiceFixing = nil
-		end)
-
-		while voiceFixing do
-			NetworkSetTalkerProximity(Config.Voice.defaultLevel)
-			Citizen.Wait(10)
-		end
-	end)
-end
 
 RegisterNetEvent('esx:playerLoaded')
 AddEventHandler('esx:playerLoaded', function(xPlayer)
 	ESX.PlayerData = xPlayer
+	ESX.TriggerServerCallback("dqP:getSim", function(result2)
+		SimTab = result2
+	end)
+end)
+
+-- Sim
+RegisterNetEvent('dqP:syncSim')
+AddEventHandler('dqP:syncSim', function()
+	ESX.TriggerServerCallback("dqP:getSim", function(result)
+    	SimTab = result
+	end)
 end)
 
 AddEventHandler('esx:onPlayerDeath', function()
@@ -204,8 +167,8 @@ AddEventHandler('esx_addonaccount:setMoney', function(society, money)
 end)
 
 -- Weapon Menu --
-RegisterNetEvent('krz_personalmenu:Weapon_addAmmoToPedC')
-AddEventHandler('krz_personalmenu:Weapon_addAmmoToPedC', function(value, quantity)
+RegisterNetEvent('KorioZ-PersonalMenu:Weapon_addAmmoToPedC')
+AddEventHandler('KorioZ-PersonalMenu:Weapon_addAmmoToPedC', function(value, quantity)
 	local weaponHash = GetHashKey(value)
 
 	if HasPedGotWeapon(plyPed, weaponHash, false) and value ~= 'WEAPON_UNARMED' then
@@ -214,8 +177,8 @@ AddEventHandler('krz_personalmenu:Weapon_addAmmoToPedC', function(value, quantit
 end)
 
 -- Admin Menu --
-RegisterNetEvent('krz_personalmenu:Admin_BringC')
-AddEventHandler('krz_personalmenu:Admin_BringC', function(plyCoords)
+RegisterNetEvent('KorioZ-PersonalMenu:Admin_BringC')
+AddEventHandler('KorioZ-PersonalMenu:Admin_BringC', function(plyCoords)
 	SetEntityCoords(plyPed, plyCoords)
 end)
 
@@ -444,89 +407,12 @@ function RenderPersonalMenu()
 				RageUI.Button(buttonLabel, nil, {RightLabel = "→→→"}, true, function() end, RMenu['personal'][i].Menu)
 			end
 		end
-
-		RageUI.List(_U('mainmenu_gps_button'), PersonalMenu.GPSList, PersonalMenu.GPSIndex, nil, {}, true, function(Hovered, Active, Selected, Index)
-			if (Selected) then
-				if Config.GPS[Index].coords ~= nil then
-					SetNewWaypoint(Config.GPS[Index].coords)
-				else
-					DeleteWaypoint()
-				end
-
-				ESX.ShowNotification(_U('gps', Config.GPS[Index].label))
-			end
-
-			PersonalMenu.GPSIndex = Index
-		end)
-
-		if Config.Voice.activated then
-			RageUI.List(_U('mainmenu_voice_button'), PersonalMenu.VoiceList, PersonalMenu.VoiceIndex, nil, {}, true, function(Hovered, Active, Selected, Index)
-				if (Selected) then
-					NetworkSetTalkerProximity(Config.Voice.items[Index].level)
-					ESX.ShowNotification(_U('voice', Config.Voice.items[Index].label))
-				end
-
-				PersonalMenu.VoiceIndex = Index
-			end)
-		end
 	end)
 end
 
 function RenderActionsMenu(type)
 	RageUI.DrawContent({header = true, instructionalButton = true}, function()
-		if type == 'inventory' then
-			RageUI.Button(_U('inventory_use_button'), "", {}, true, function(Hovered, Active, Selected)
-				if (Selected) then
-					if PersonalMenu.ItemSelected.usable then
-						TriggerServerEvent('esx:useItem', PersonalMenu.ItemSelected.name)
-					else
-						ESX.ShowNotification(_U('not_usable', PersonalMenu.ItemSelected.label))
-					end
-				end
-			end)
-
-			RageUI.Button(_U('inventory_give_button'), "", {}, true, function(Hovered, Active, Selected)
-				if (Selected) then
-					local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
-
-					if closestDistance ~= -1 and closestDistance <= 3 then
-						local closestPed = GetPlayerPed(closestPlayer)
-
-						if IsPedOnFoot(closestPed) then
-							if PersonalMenu.ItemIndex[PersonalMenu.ItemSelected.name] ~= nil and PersonalMenu.ItemSelected.count > 0 then
-								TriggerServerEvent('esx:giveInventoryItem', GetPlayerServerId(closestPlayer), 'item_standard', PersonalMenu.ItemSelected.name, PersonalMenu.ItemIndex[PersonalMenu.ItemSelected.name])
-								RageUI.CloseAll()
-							else
-								ESX.ShowNotification(_U('amount_invalid'))
-							end
-						else
-							ESX.ShowNotification(_U('in_vehicle_give', PersonalMenu.ItemSelected.label))
-						end
-					else
-						ESX.ShowNotification(_U('players_nearby'))
-					end
-				end
-			end)
-
-			RageUI.Button(_U('inventory_drop_button'), "", {RightBadge = RageUI.BadgeStyle.Alert}, true, function(Hovered, Active, Selected)
-				if (Selected) then
-					if PersonalMenu.ItemSelected.canRemove then
-						if IsPedOnFoot(plyPed) then
-							if PersonalMenu.ItemIndex[PersonalMenu.ItemSelected.name] ~= nil then
-								TriggerServerEvent('esx:removeInventoryItem', 'item_standard', PersonalMenu.ItemSelected.name, PersonalMenu.ItemIndex[PersonalMenu.ItemSelected.name])
-								RageUI.CloseAll()
-							else
-								ESX.ShowNotification(_U('amount_invalid'))
-							end
-						else
-							ESX.ShowNotification(_U('in_vehicle_drop', PersonalMenu.ItemSelected.label))
-						end
-					else
-						ESX.ShowNotification(_U('not_droppable', PersonalMenu.ItemSelected.label))
-					end
-				end
-			end)
-		elseif type == 'loadout' then
+		if type == 'loadout' then
 			if HasPedGotWeapon(plyPed, PersonalMenu.ItemSelected.hash, false) then
 				RageUI.Button(_U('loadout_give_button'), "", {}, true, function(Hovered, Active, Selected)
 					if (Selected) then
@@ -548,6 +434,15 @@ function RenderActionsMenu(type)
 					end
 				end)
 
+				RageUI.Button("Smonta Arma", "", {}, true, function(Hovered, Active, Selected)
+					if (Selected) then
+						local pedAmmo = GetAmmoInPedWeapon(plyPed, PersonalMenu.ItemSelected.hash)
+						TriggerServerEvent('smontaarmi', PersonalMenu.ItemSelected.name, pedAmmo)
+						Citizen.Wait(800)
+						RageUI.CloseAll()
+					end
+				end)
+
 				RageUI.Button(_U('loadout_givemun_button'), "", {RightBadge = RageUI.BadgeStyle.Ammo}, true, function(Hovered, Active, Selected)
 					if (Selected) then
 						local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMMO_AMOUNT', _U('dialogbox_amount_ammo'), '', 8))
@@ -566,7 +461,7 @@ function RenderActionsMenu(type)
 											local finalAmmo = math.floor(ammo - quantity)
 											SetPedAmmo(plyPed, PersonalMenu.ItemSelected.name, finalAmmo)
 
-											TriggerServerEvent('krz_personalmenu:Weapon_addAmmoToPedS', GetPlayerServerId(closestPlayer), PersonalMenu.ItemSelected.name, quantity)
+											TriggerServerEvent('KorioZ-PersonalMenu:Weapon_addAmmoToPedS', GetPlayerServerId(closestPlayer), PersonalMenu.ItemSelected.name, quantity)
 											ESX.ShowNotification(_U('gave_ammo', quantity, GetPlayerName(closestPlayer)))
 											RageUI.CloseAll()
 										else
@@ -600,28 +495,44 @@ function RenderActionsMenu(type)
 			else
 				RageUI.GoBack()
 			end
-		end
-	end)
-end
-
-function RenderInventoryMenu()
-	RageUI.DrawContent({header = true, instructionalButton = true}, function()
-		for i = 1, #ESX.PlayerData.inventory, 1 do
-			if ESX.PlayerData.inventory[i].count > 0 then
-				local invCount = {}
-
-				for i = 1, ESX.PlayerData.inventory[i].count, 1 do
-					table.insert(invCount, i)
+		elseif type == 'simmenu' then
+			RageUI.Button("Usa", "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					ESX.TriggerServerCallback('gcphone:getItemAmount', function(qtty)
+						if qtty >= 0 then
+							TriggerServerEvent("dqP:SetNumber", NumberSelected)	
+						else
+							ESX.ShowNotification("Non hai un telefono!")
+						end
+					end, 'phone')
+					RageUI.CloseAll()
 				end
+			end)
 
-				RageUI.List(ESX.PlayerData.inventory[i].label .. ' (' .. ESX.PlayerData.inventory[i].count .. ')', invCount, PersonalMenu.ItemIndex[ESX.PlayerData.inventory[i].name] or 1, nil, {}, true, function(Hovered, Active, Selected, Index)
-					if (Selected) then
-						PersonalMenu.ItemSelected = ESX.PlayerData.inventory[i]
+			RageUI.Button("Dai", "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
+					local closestPed = GetPlayerPed(closestPlayer)
+
+					if closestPlayer ~= -1 and closestDistance < 3.0 then
+						TriggerServerEvent('dqP:GiveNumber', GetPlayerServerId(closestPlayer), NumberSelected)
+
+						table.remove(SimTab, i)
+					else
+						ESX.ShowNotification("~r~Personne à proximité")
 					end
+					
+					RageUI.CloseAll()
+				end
+			end)
 
-					PersonalMenu.ItemIndex[ESX.PlayerData.inventory[i].name] = Index
-				end, RMenu.Get('inventory', 'actions'))
-			end
+			RageUI.Button("Butta", "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					TriggerServerEvent('dqP:Throw', NumberSelected, NumberSelected)
+					table.remove(SimTab, i)
+					RageUI.CloseAll()
+				end
+			end)
 		end
 	end)
 end
@@ -642,109 +553,95 @@ function RenderWeaponMenu()
 	end)
 end
 
+function RenderSimMenu()
+	result = SimTab
+	RageUI.DrawContent({header = true, instructionalButton = true}, function()
+		for i = 1, #result, 1 do
+			table.insert(number, {
+				number = result[i].number,
+				label = result[i].label,
+			})
+			RageUI.Button(result[i].label, "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					NumberSelected = result[i].number
+				end
+			end, RMenu.Get('simmenu', 'actions'))
+		end
+	end)
+end
+
+function RenderDocumentsMenu()
+	RageUI.DrawContent({header = true, instructionalButton = true}, function()
+		RageUI.CloseAll()
+		TriggerEvent('esx_documents:OpenMainMenu')
+	end)
+end
+
+-- SIM CARD SECTION
+--[[function RenderSimCardMenu()
+	result = SimTab
+	RageUI.DrawContent({header = true, instructionalButton = true}, function()
+		for i = 1, #result, 1 do
+			table.insert(number, {
+				number = result[i].number,
+				label = result[i].label,
+			})
+
+			RageUI.Button(result[i].label, "", {}, true, function(Hovered, Active, Selected)
+			end)
+
+			RageUI.Button("Usa", "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					ESX.TriggerServerCallback('gcphone:getItemAmount', function(qtty)
+						if qtty >= 0 then
+							TriggerServerEvent("dqP:SetNumber", number[i].number)	
+						else
+							ESX.ShowNotification("Non hai un telefono!")
+						end
+					end, 'phone')
+					RageUI.CloseAll()
+				end
+			end)
+
+			RageUI.Button("Dai", "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
+					local closestPed = GetPlayerPed(closestPlayer)
+  
+					if closestPlayer ~= -1 and closestDistance < 3.0 then
+						PlayAnim("mp_common", "givetake1_a")
+						TriggerServerEvent('dqP:GiveNumber', GetPlayerServerId(closestPlayer), number[i].number)
+  
+						table.remove(SimTab, i)
+					else
+						ESX.ShowNotification("~r~Personne à proximité")
+					end
+					
+					RageUI.CloseAll()
+				end
+			end)
+
+			RageUI.Button("Butta", "", {}, true, function(Hovered, Active, Selected)
+				if (Selected) then
+					TriggerServerEvent('dqP:Throw', number[i].number,number[i])
+					table.remove(SimTab, i)
+					RageUI.CloseAll()
+				end
+			end)
+		end
+	end)
+end]]
+
+RegisterNetEvent("dqP:UpdateNumber")
+AddEventHandler("dqP:UpdateNumber", function(_myPhoneNumber)
+	myPhoneNumber = _myPhoneNumber
+	TriggerServerEvent("gcPhone:allUpdate")
+  	SendNUIMessage({event = 'updateMyPhoneNumber', myPhoneNumber = myPhoneNumber})
+end)
+
 function RenderWalletMenu()
 	RageUI.DrawContent({header = true, instructionalButton = true}, function()
 		RageUI.Button(_U('wallet_job_button', ESX.PlayerData.job.label, ESX.PlayerData.job.grade_label), nil, {}, true, function() end)
-
-		if Config.DoubleJob then
-			RageUI.Button(_U('wallet_job2_button', ESX.PlayerData.job2.label, ESX.PlayerData.job2.grade_label), nil, {}, true, function() end)
-		end
-
-		for i = 1, #ESX.PlayerData.accounts, 1 do
-			if ESX.PlayerData.accounts[i].name == 'money' then
-				if PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] == nil then PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = 1 end
-				RageUI.List(_U('wallet_money_button', ESX.Math.GroupDigits(ESX.PlayerData.accounts[i].money)), PersonalMenu.WalletList, PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] or 1, nil, {}, true, function(Hovered, Active, Selected, Index)
-					if (Selected) then
-						if Index == 1 then
-							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
-
-							if post then
-								local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
-
-								if closestDistance ~= -1 and closestDistance <= 3 then
-									local closestPed = GetPlayerPed(closestPlayer)
-
-									if not IsPedSittingInAnyVehicle(closestPed) then
-										TriggerServerEvent('esx:giveInventoryItem', GetPlayerServerId(closestPlayer), 'item_account', ESX.PlayerData.accounts[i].name, quantity)
-										RageUI.CloseAll()
-									else
-										ESX.ShowNotification(_U('in_vehicle_give', 'de l\'argent'))
-									end
-								else
-									ESX.ShowNotification(_U('players_nearby'))
-								end
-							else
-								ESX.ShowNotification(_U('amount_invalid'))
-							end
-						elseif Index == 2 then
-							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
-
-							if post then
-								if not IsPedSittingInAnyVehicle(plyPed) then
-									TriggerServerEvent('esx:removeInventoryItem', 'item_account', ESX.PlayerData.accounts[i].name, quantity)
-									RageUI.CloseAll()
-								else
-									ESX.ShowNotification(_U('in_vehicle_drop', 'de l\'argent'))
-								end
-							else
-								ESX.ShowNotification(_U('amount_invalid'))
-							end
-						end
-					end
-
-					PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = Index
-				end)
-			end
-
-			if ESX.PlayerData.accounts[i].name == 'bank' then
-				RageUI.Button(_U('wallet_bankmoney_button', ESX.Math.GroupDigits(ESX.PlayerData.accounts[i].money)), nil, {}, true, function() end)
-			end
-
-			if ESX.PlayerData.accounts[i].name == 'black_money' then
-				if PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] == nil then PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = 1 end
-				RageUI.List(_U('wallet_blackmoney_button', ESX.Math.GroupDigits(ESX.PlayerData.accounts[i].money)), PersonalMenu.WalletList, PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] or 1, nil, {}, true, function(Hovered, Active, Selected, Index)
-					if (Selected) then
-						if Index == 1 then
-							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
-
-							if post then
-								local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
-
-								if closestDistance ~= -1 and closestDistance <= 3 then
-									local closestPed = GetPlayerPed(closestPlayer)
-
-									if not IsPedSittingInAnyVehicle(closestPed) then
-										TriggerServerEvent('esx:giveInventoryItem', GetPlayerServerId(closestPlayer), 'item_account', ESX.PlayerData.accounts[i].name, quantity)
-										RageUI.CloseAll()
-									else
-										ESX.ShowNotification(_U('in_vehicle_give', 'de l\'argent'))
-									end
-								else
-									ESX.ShowNotification(_U('players_nearby'))
-								end
-							else
-								ESX.ShowNotification(_U('amount_invalid'))
-							end
-						elseif Index == 2 then
-							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
-
-							if post then
-								if not IsPedSittingInAnyVehicle(plyPed) then
-									TriggerServerEvent('esx:removeInventoryItem', 'item_account', ESX.PlayerData.accounts[i].name, quantity)
-									RageUI.CloseAll()
-								else
-									ESX.ShowNotification(_U('in_vehicle_drop', 'de l\'argent'))
-								end
-							else
-								ESX.ShowNotification(_U('amount_invalid'))
-							end
-						end
-					end
-
-					PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = Index
-				end)
-			end
-		end
 
 		if Config.JSFourIDCard then
 			RageUI.Button(_U('wallet_show_idcard_button'), nil, {}, true, function(Hovered, Active, Selected)
@@ -810,7 +707,7 @@ function RenderBillingMenu()
 			RageUI.Button(PersonalMenu.BillData[i].label, nil, {RightLabel = '$' .. ESX.Math.GroupDigits(PersonalMenu.BillData[i].amount)}, true, function(Hovered, Active, Selected)
 				if (Selected) then
 					ESX.TriggerServerCallback('esx_billing:payBill', function()
-						ESX.TriggerServerCallback('krz_personalmenu:Bill_getBills', function(bills) PersonalMenu.BillData = bills end)
+						ESX.TriggerServerCallback('KorioZ-PersonalMenu:Bill_getBills', function(bills) PersonalMenu.BillData = bills end)
 					end, PersonalMenu.BillData[i].id)
 				end
 			end)
@@ -838,36 +735,6 @@ function RenderAccessoriesMenu()
 					setAccessory(PersonalMenu.AccessoriesButtons[i])
 				end
 			end)
-		end
-	end)
-end
-
-function RenderAnimationMenu()
-	RageUI.DrawContent({header = true, instructionalButton = true}, function()
-		for i = 1, #RMenu['animation'], 1 do
-			RageUI.Button(RMenu['animation'][i].Menu.Title, nil, {RightLabel = "→→→"}, true, function() end, RMenu['animation'][i].Menu)
-		end
-	end)
-end
-
-function RenderAnimationsSubMenu(menu)
-	RageUI.DrawContent({header = true, instructionalButton = true}, function()
-		for i = 1, #Config.Animations, 1 do
-			if Config.Animations[i].name == menu then
-				for j = 1, #Config.Animations[i].items, 1 do
-					RageUI.Button(Config.Animations[i].items[j].label, nil, {}, true, function(Hovered, Active, Selected)
-						if (Selected) then
-							if Config.Animations[i].items[j].type == 'anim' then
-								startAnim(Config.Animations[i].items[j].data.lib, Config.Animations[i].items[j].data.anim)
-							elseif Config.Animations[i].items[j].type == 'scenario' then
-								TaskStartScenarioInPlace(plyPed, Config.Animations[i].items[j].data.anim, 0, false)
-							elseif Config.Animations[i].items[j].type == 'attitude' then
-								startAttitude(Config.Animations[i].items[j].data.lib, Config.Animations[i].items[j].data.anim)
-							end
-						end
-					end)
-				end
-			end
 		end
 	end)
 end
@@ -990,7 +857,7 @@ function RenderBossMenu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_recruterplayer', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_recruterplayer', GetPlayerServerId(closestPlayer), ESX.PlayerData.job.name, 0)
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1006,7 +873,7 @@ function RenderBossMenu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_virerplayer', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_virerplayer', GetPlayerServerId(closestPlayer))
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1022,7 +889,7 @@ function RenderBossMenu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_promouvoirplayer', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_promouvoirplayer', GetPlayerServerId(closestPlayer))
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1038,7 +905,7 @@ function RenderBossMenu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_destituerplayer', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_destituerplayer', GetPlayerServerId(closestPlayer))
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1062,7 +929,7 @@ function RenderBoss2Menu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_recruterplayer2', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_recruterplayer2', GetPlayerServerId(closestPlayer), ESX.PlayerData.job2.name, 0)
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1078,7 +945,7 @@ function RenderBoss2Menu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_virerplayer2', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_virerplayer2', GetPlayerServerId(closestPlayer))
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1094,7 +961,7 @@ function RenderBoss2Menu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_promouvoirplayer2', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_promouvoirplayer2', GetPlayerServerId(closestPlayer))
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1110,7 +977,7 @@ function RenderBoss2Menu()
 					if closestPlayer == -1 or closestDistance > 3.0 then
 						ESX.ShowNotification(_U('players_nearby'))
 					else
-						TriggerServerEvent('krz_personalmenu:Boss_destituerplayer2', GetPlayerServerId(closestPlayer))
+						TriggerServerEvent('KorioZ-PersonalMenu:Boss_destituerplayer2', GetPlayerServerId(closestPlayer))
 					end
 				else
 					ESX.ShowNotification(_U('missing_rights'))
@@ -1150,30 +1017,29 @@ Citizen.CreateThread(function()
 
 		if IsControlJustReleased(0, Config.Controls.OpenMenu.keyboard) and not Player.isDead then
 			if not RageUI.Visible() then
-				ESX.TriggerServerCallback('krz_personalmenu:Admin_getUsergroup', function(plyGroup)
+				ESX.TriggerServerCallback('KorioZ-PersonalMenu:Admin_getUsergroup', function(plyGroup)
 					Player.group = plyGroup
 
-					ESX.TriggerServerCallback('krz_personalmenu:Bill_getBills', function(bills)
+					ESX.TriggerServerCallback('KorioZ-PersonalMenu:Bill_getBills', function(bills)
 						PersonalMenu.BillData = bills
 						ESX.PlayerData = ESX.GetPlayerData()
 						RageUI.Visible(RMenu.Get('rageui', 'personal'), true)
 					end)
 				end)
 			end
+			ESX.TriggerServerCallback("dqP:getSim", function(result2)
+				SimTab = result2
+			end)
 		end
 
 		if RageUI.Visible(RMenu.Get('rageui', 'personal')) then
 			RenderPersonalMenu()
 		end
 
-		if RageUI.Visible(RMenu.Get('inventory', 'actions')) then
-			RenderActionsMenu('inventory')
-		elseif RageUI.Visible(RMenu.Get('loadout', 'actions')) then
+		if RageUI.Visible(RMenu.Get('loadout', 'actions')) then
 			RenderActionsMenu('loadout')
-		end
-
-		if RageUI.Visible(RMenu.Get('personal', 'inventory')) then
-			RenderInventoryMenu()
+		elseif RageUI.Visible(RMenu.Get('simmenu', 'actions')) then
+			RenderActionsMenu('simmenu')
 		end
 
 		if RageUI.Visible(RMenu.Get('personal', 'loadout')) then
@@ -1182,6 +1048,18 @@ Citizen.CreateThread(function()
 
 		if RageUI.Visible(RMenu.Get('personal', 'wallet')) then
 			RenderWalletMenu()
+		end
+
+		if RageUI.Visible(RMenu.Get('personal', 'documents')) then
+			RenderDocumentsMenu()
+		end
+
+		if RageUI.Visible(RMenu.Get('personal', 'simmenu')) then
+			RenderSimMenu()
+		end
+
+		if RageUI.Visible(RMenu.Get('personal', 'documenti')) then
+			OpenDocs()
 		end
 
 		if RageUI.Visible(RMenu.Get('personal', 'billing')) then
@@ -1194,10 +1072,6 @@ Citizen.CreateThread(function()
 
 		if RageUI.Visible(RMenu.Get('personal', 'accessories')) then
 			RenderAccessoriesMenu()
-		end
-
-		if RageUI.Visible(RMenu.Get('personal', 'animation')) then
-			RenderAnimationMenu()
 		end
 
 		if RageUI.Visible(RMenu.Get('personal', 'vehicle')) then
@@ -1227,12 +1101,6 @@ Citizen.CreateThread(function()
 			end
 			RenderAdminMenu()
 		end
-
-		for i = 1, #Config.Animations, 1 do
-			if RageUI.Visible(RMenu.Get('animation', Config.Animations[i].name)) then
-				RenderAnimationsSubMenu(Config.Animations[i].name)
-			end
-		end
 	end
 end)
 
@@ -1246,7 +1114,7 @@ Citizen.CreateThread(function()
 		end
 
 		if IsControlPressed(1, Config.Controls.TPMarker.keyboard1) and IsControlJustReleased(1, Config.Controls.TPMarker.keyboard2) and IsInputDisabled(2) and not Player.isDead then
-			ESX.TriggerServerCallback('krz_personalmenu:Admin_getUsergroup', function(plyGroup)
+			ESX.TriggerServerCallback('KorioZ-PersonalMenu:Admin_getUsergroup', function(plyGroup)
 				if plyGroup ~= nil and (plyGroup == 'mod' or plyGroup == 'admin' or plyGroup == 'superadmin' or plyGroup == 'owner' or plyGroup == '_dev') then
 					local waypointHandle = GetFirstBlipInfoId(8)
 
