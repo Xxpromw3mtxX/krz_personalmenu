@@ -1,21 +1,22 @@
-fx_version 'adamant'
-games {'gta5'}
+fx_version 'cerulean'
+game 'gta5'
+
+lua54 'yes'
 
 author 'Korioz'
 description 'PersonalMenu for FiveM developed on top of ESX and RageUI'
-version '2.0'
+version '2.1'
 
 dependency 'es_extended'
 
+shared_scripts {
+	'@es_extended/locale.lua',
+	'locales/*.lua',
+	'config.lua',
+}
+
 server_scripts {
 	'@mysql-async/lib/MySQL.lua',
-	'@es_extended/locale.lua',
-	'locales/br.lua',
-	'locales/de.lua',
-	'locales/en.lua',
-	'locales/es.lua',
-	'locales/fr.lua',
-	'config.lua',
 	'server/main.lua'
 }
 
@@ -29,17 +30,8 @@ client_scripts {
 	"dependencies/menu/MenuController.lua",
 
 	"dependencies/menu/elements/*.lua",
-	"dependencies/menu/items/*.lua"
-}
+	"dependencies/menu/items/*.lua",
 
-client_scripts {
-	'@es_extended/locale.lua',
-	'locales/br.lua',
-	'locales/de.lua',
-	'locales/en.lua',
-	'locales/es.lua',
-	'locales/fr.lua',
-	'config.lua',
 	'client/main.lua',
 	'client/other.lua'
 }
