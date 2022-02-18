@@ -16,7 +16,7 @@ Config = {}
 Config.Locale = 'it'
 
 -- GENERAL --
-Config.MenuTitle = 'Atlantis RP' -- change it to you're server name
+Config.MenuTitle = 'Atlantis' -- change it to you're server name
 Config.DoubleJob = false -- enable if you're using esx double job
 Config.NoclipSpeed = 1.0 -- change it to change the speed in noclip
 Config.JSFourIDCard = true -- enable if you're using jsfour-idcard
@@ -27,7 +27,7 @@ Config.Controls = {
 	HandsUP = {keyboard = Keys['X']},
 	Pointing = {keyboard = Keys['B']},
 	Crouch = {keyboard = Keys['LEFTCTRL']},
-	StopTasks = {keyboard = Keys['~']},
+	StopTasks = {keyboard = Keys['X']},
 	TPMarker = {keyboard1 = Keys['LEFTALT'], keyboard2 = Keys['E']}
 }
 
@@ -36,7 +36,7 @@ Config.Admin = {
 	{
 		name = 'goto',
 		label = _U('admin_goto_button'),
-		groups = {'_dev', 'owner', 'admin', 'mod'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin', 'mod'},
 		command = function()
 			local plyId = KeyboardInput('KORIOZ_BOX_ID', _U('dialogbox_playerid'), '', 8)
 
@@ -54,7 +54,7 @@ Config.Admin = {
 	{
 		name = 'bring',
 		label = _U('admin_bring_button'),
-		groups = {'_dev', 'owner', 'admin', 'mod'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin', 'mod'},
 		command = function()
 			local plyId = KeyboardInput('KORIOZ_BOX_ID', _U('dialogbox_playerid'), '', 8)
 
@@ -72,7 +72,7 @@ Config.Admin = {
 	{
 		name = 'tpxyz',
 		label = _U('admin_tpxyz_button'),
-		groups = {'_dev', 'owner', 'admin'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin'},
 		command = function()
 			local pos = KeyboardInput('KORIOZ_BOX_XYZ', _U('dialogbox_xyz'), '', 50)
 
@@ -90,7 +90,7 @@ Config.Admin = {
 	{
 		name = 'noclip',
 		label = _U('admin_noclip_button'),
-		groups = {'_dev', 'owner', 'admin', 'mod'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin', 'mod'},
 		command = function()
 			Player.noclip = not Player.noclip
 
@@ -122,7 +122,7 @@ Config.Admin = {
 	{
 		name = 'godmode',
 		label = _U('admin_godmode_button'),
-		groups = {'_dev', 'owner'},
+		groups = {'_dev', 'owner', 'superadmin'},
 		command = function()
 			Player.godmode = not Player.godmode
 
@@ -138,7 +138,7 @@ Config.Admin = {
 	{
 		name = 'ghostmode',
 		label = _U('admin_ghostmode_button'),
-		groups = {'_dev', 'owner'},
+		groups = {'_dev', 'owner', 'superadmin'},
 		command = function()
 			Player.ghostmode = not Player.ghostmode
 
@@ -152,9 +152,29 @@ Config.Admin = {
 		end
 	},
 	{
+		name = 'spawnveh',
+		label = _U('admin_spawnveh_button'),
+		groups = {'_dev', 'owner', 'superadmin'},
+		command = function()
+			local modelName = KeyboardInput('KORIOZ_BOX_VEHICLE_NAME', _U('dialogbox_vehiclespawner'), '', 50)
+
+			if modelName ~= nil then
+				modelName = tostring(modelName)
+
+				if type(modelName) == 'string' then
+					ESX.Game.SpawnVehicle(modelName, GetEntityCoords(plyPed), GetEntityHeading(plyPed), function(vehicle)
+						TaskWarpPedIntoVehicle(plyPed, vehicle, -1)
+					end)
+				end
+			end
+
+			RageUI.CloseAll()
+		end
+	},
+	{
 		name = 'repairveh',
 		label = _U('admin_repairveh_button'),
-		groups = {'_dev', 'owner', 'admin'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin'},
 		command = function()
 			local plyVeh = GetVehiclePedIsIn(plyPed, false)
 			SetVehicleFixed(plyVeh)
@@ -162,63 +182,9 @@ Config.Admin = {
 		end
 	},
 	{
-		name = 'givemoney',
-		label = _U('admin_givemoney_button'),
-		groups = {'_dev', 'owner'},
-		command = function()
-			local amount = KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8)
-
-			if amount ~= nil then
-				amount = tonumber(amount)
-
-				if type(amount) == 'number' then
-					TriggerServerEvent('krz_personalmenu:Admin_giveCash', amount)
-				end
-			end
-
-			RageUI.CloseAll()
-		end
-	},
-	{
-		name = 'givebank',
-		label = _U('admin_givebank_button'),
-		groups = {'_dev', 'owner'},
-		command = function()
-			local amount = KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8)
-
-			if amount ~= nil then
-				amount = tonumber(amount)
-
-				if type(amount) == 'number' then
-					TriggerServerEvent('krz_personalmenu:Admin_giveBank', amount)
-				end
-			end
-
-			RageUI.CloseAll()
-		end
-	},
-	{
-		name = 'givedirtymoney',
-		label = _U('admin_givedirtymoney_button'),
-		groups = {'_dev', 'owner'},
-		command = function()
-			local amount = KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8)
-
-			if amount ~= nil then
-				amount = tonumber(amount)
-
-				if type(amount) == 'number' then
-					TriggerServerEvent('krz_personalmenu:Admin_giveDirtyMoney', amount)
-				end
-			end
-
-			RageUI.CloseAll()
-		end
-	},
-	{
 		name = 'showxyz',
 		label = _U('admin_showxyz_button'),
-		groups = {'_dev', 'owner', 'admin', 'mod'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin', 'mod'},
 		command = function()
 			Player.showCoords = not Player.showCoords
 		end
@@ -226,7 +192,7 @@ Config.Admin = {
 	{
 		name = 'showname',
 		label = _U('admin_showname_button'),
-		groups = {'_dev', 'owner', 'admin', 'mod'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin', 'mod'},
 		command = function()
 			Player.showName = not Player.showName
 
@@ -241,7 +207,7 @@ Config.Admin = {
 	{
 		name = 'tpmarker',
 		label = _U('admin_tpmarker_button'),
-		groups = {'_dev', 'owner', 'admin'},
+		groups = {'_dev', 'owner', 'superadmin', 'admin'},
 		command = function()
 			local waypointHandle = GetFirstBlipInfoId(8)
 

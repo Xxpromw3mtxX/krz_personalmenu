@@ -16,7 +16,7 @@ local PersonalMenu = {
 		Trunk = false
 	},
 	DoorIndex = 1,
-	DoorList = {_U('vehicle_door_frontleft'), _U('vehicle_door_frontright'), _U('vehicle_door_backleft'), _U('vehicle_door_backright')},
+	DoorList = {_U('vehicle_door_frontleft'), _U('vehicle_door_frontright'), _U('vehicle_door_backleft'), _U('vehicle_door_backright')}
 }
 
 Player = {
@@ -75,17 +75,14 @@ Citizen.CreateThread(function()
 		end
 	end
 
-	RMenu.Add('rageui', 'personal', RageUI.CreateMenu(Config.MenuTitle, _U('mainmenu_subtitle'), 1450, 490, 'commonmenu', 'interaction_bgd', 255, 255, 255, 255))
+	RMenu.Add('rageui', 'personal', RageUI.CreateMenu(Config.MenuTitle, _U('mainmenu_subtitle'), 1450, 560, 'commonmenu', 'interaction_bgd', 255, 255, 255, 255))
 
-	
-	RMenu.Add('personal', 'loadout', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('loadout_title'), ' ', 0, 0))
-	RMenu.Add('personal', 'components', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('component_title'), ' ', 0, 0))
-	RMenu.Add('personal', 'wallet', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('wallet_title'), ' ', 1450, 600))
-	RMenu.Add('personal', 'documents', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('documents_title')))
-	RMenu.Add('personal', 'billing', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bills_title'), ' ', 0, 0))
-	RMenu.Add('personal', 'clothes', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('clothes_title'), ' ', 0, 0))
-	RMenu.Add('personal', 'accessories', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('accessories_title'), ' ', 0, 0))
-	RMenu.Add('personal', 'vehicle', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('vehicle_title'), ' ', 0, 0), function()
+	RMenu.Add('personal', 'wallet', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('wallet_title'), _U('wallet_title'), 1450, 485))
+	RMenu.Add('personal', 'loadout', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('loadout_title'), _U('loadout_title'), 1450, 450))
+	RMenu.Add('personal', 'billing', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bills_title'), _U('bills_title'), 1450, 450))
+	RMenu.Add('personal', 'clothes', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('clothes_title'), _U('clothes_title'), 1450, 675))
+	RMenu.Add('personal', 'accessories', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('accessories_title'), _U('accessories_title'), 1450, 712))
+	RMenu.Add('personal', 'vehicle', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('vehicle_title'), _U('vehicle_title'), 1450, 715), function()
 		if IsPedSittingInAnyVehicle(plyPed) then
 			if (GetPedInVehicleSeat(GetVehiclePedIsIn(plyPed, false), -1) == plyPed) then
 				return true
@@ -95,7 +92,7 @@ Citizen.CreateThread(function()
 		return false
 	end)
 
-	RMenu.Add('personal', 'boss', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bossmanagement_title'), ' ', 0, 0), function()
+	RMenu.Add('personal', 'boss', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bossmanagement_title'), _U('bossmanagement_title'), 1450, 675), function()
 		if ESX.PlayerData.job ~= nil and ESX.PlayerData.job.grade_name == 'boss' then
 			return true
 		end
@@ -104,7 +101,7 @@ Citizen.CreateThread(function()
 	end)
 
 	if Config.DoubleJob then
-		RMenu.Add('personal', 'boss2', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bossmanagement2_title'), ' ', 0, 0), function()
+		RMenu.Add('personal', 'boss2', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('bossmanagement2_title'), _U('bossmanagement2_title'), 1450, 675), function()
 			if Config.DoubleJob then
 				if ESX.PlayerData.job2 ~= nil and ESX.PlayerData.job2.grade_name == 'boss' then
 					return true
@@ -115,7 +112,7 @@ Citizen.CreateThread(function()
 		end)
 	end
 
-	RMenu.Add('personal', 'admin', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('admin_title'), ' ', 1450, 450), function()
+	RMenu.Add('personal', 'admin', RageUI.CreateSubMenu(RMenu.Get('rageui', 'personal'), _U('admin_title'), _U('admin_title'), 1450, 450), function()
 		if Player.group ~= nil and (Player.group == 'mod' or Player.group == 'admin' or Player.group == 'superadmin' or Player.group == 'owner' or Player.group == '_dev') then
 			return true
 		end
@@ -123,7 +120,7 @@ Citizen.CreateThread(function()
 		return false
 	end)
 
-	RMenu.Add('loadout', 'actions', RageUI.CreateSubMenu(RMenu.Get('personal', 'loadout'), _U('loadout_actions_title'), ' ', 0, 0))
+	RMenu.Add('loadout', 'actions', RageUI.CreateSubMenu(RMenu.Get('personal', 'loadout'), _U('loadout_actions_title')))
 	RMenu.Get('loadout', 'actions').Closed = function()
 		PersonalMenu.ItemSelected = nil
 	end
@@ -473,6 +470,17 @@ function RenderActionsMenu(type)
 						end
 					end
 				end)
+
+				RageUI.Button(_U('loadout_drop_button'), "", {RightBadge = RageUI.BadgeStyle.Alert}, true, function(Hovered, Active, Selected)
+					if (Selected) then
+						if IsPedOnFoot(plyPed) then
+							TriggerServerEvent('esx:removeInventoryItem', 'item_weapon', PersonalMenu.ItemSelected.name)
+							RageUI.CloseAll()
+						else
+							ESX.ShowNotification(_U('in_vehicle_drop', PersonalMenu.ItemSelected.label))
+						end
+					end
+				end)
 			else
 				RageUI.GoBack()
 			end
@@ -502,6 +510,102 @@ function RenderWalletMenu()
 
 		if Config.DoubleJob then
 			RageUI.Button(_U('wallet_job2_button', ESX.PlayerData.job2.label, ESX.PlayerData.job2.grade_label), nil, {}, true, function() end)
+		end
+
+		for i = 1, #ESX.PlayerData.accounts, 1 do
+			if ESX.PlayerData.accounts[i].name == 'money' then
+				if PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] == nil then PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = 1 end
+				RageUI.List(_U('wallet_money_button', ESX.Math.GroupDigits(ESX.PlayerData.accounts[i].money)), PersonalMenu.WalletList, PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] or 1, nil, {}, true, function(Hovered, Active, Selected, Index)
+					if (Selected) then
+						if Index == 1 then
+							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
+
+							if post then
+								local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
+
+								if closestDistance ~= -1 and closestDistance <= 3 then
+									local closestPed = GetPlayerPed(closestPlayer)
+
+									if not IsPedSittingInAnyVehicle(closestPed) then
+										TriggerServerEvent('esx:giveInventoryItem', GetPlayerServerId(closestPlayer), 'item_account', ESX.PlayerData.accounts[i].name, quantity)
+										RageUI.CloseAll()
+									else
+										ESX.ShowNotification(_U('in_vehicle_give', 'de l\'argent'))
+									end
+								else
+									ESX.ShowNotification(_U('players_nearby'))
+								end
+							else
+								ESX.ShowNotification(_U('amount_invalid'))
+							end
+						elseif Index == 2 then
+							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
+
+							if post then
+								if not IsPedSittingInAnyVehicle(plyPed) then
+									TriggerServerEvent('esx:removeInventoryItem', 'item_account', ESX.PlayerData.accounts[i].name, quantity)
+									RageUI.CloseAll()
+								else
+									ESX.ShowNotification(_U('in_vehicle_drop', 'de l\'argent'))
+								end
+							else
+								ESX.ShowNotification(_U('amount_invalid'))
+							end
+						end
+					end
+
+					PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = Index
+				end)
+			end
+
+			if ESX.PlayerData.accounts[i].name == 'bank' then
+				RageUI.Button(_U('wallet_bankmoney_button', ESX.Math.GroupDigits(ESX.PlayerData.accounts[i].money)), nil, {}, true, function() end)
+			end
+
+			if ESX.PlayerData.accounts[i].name == 'black_money' then
+				if PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] == nil then PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = 1 end
+				RageUI.List(_U('wallet_blackmoney_button', ESX.Math.GroupDigits(ESX.PlayerData.accounts[i].money)), PersonalMenu.WalletList, PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] or 1, nil, {}, true, function(Hovered, Active, Selected, Index)
+					if (Selected) then
+						if Index == 1 then
+							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
+
+							if post then
+								local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
+
+								if closestDistance ~= -1 and closestDistance <= 3 then
+									local closestPed = GetPlayerPed(closestPlayer)
+
+									if not IsPedSittingInAnyVehicle(closestPed) then
+										TriggerServerEvent('esx:giveInventoryItem', GetPlayerServerId(closestPlayer), 'item_account', ESX.PlayerData.accounts[i].name, quantity)
+										RageUI.CloseAll()
+									else
+										ESX.ShowNotification(_U('in_vehicle_give', 'de l\'argent'))
+									end
+								else
+									ESX.ShowNotification(_U('players_nearby'))
+								end
+							else
+								ESX.ShowNotification(_U('amount_invalid'))
+							end
+						elseif Index == 2 then
+							local post, quantity = CheckQuantity(KeyboardInput('KORIOZ_BOX_AMOUNT', _U('dialogbox_amount'), '', 8))
+
+							if post then
+								if not IsPedSittingInAnyVehicle(plyPed) then
+									TriggerServerEvent('esx:removeInventoryItem', 'item_account', ESX.PlayerData.accounts[i].name, quantity)
+									RageUI.CloseAll()
+								else
+									ESX.ShowNotification(_U('in_vehicle_drop', 'de l\'argent'))
+								end
+							else
+								ESX.ShowNotification(_U('amount_invalid'))
+							end
+						end
+					end
+
+					PersonalMenu.WalletIndex[ESX.PlayerData.accounts[i].name] = Index
+				end)
+			end
 		end
 
 		if Config.JSFourIDCard then
@@ -848,31 +952,6 @@ function RenderBoss2Menu()
 	end)
 end
 
-function RenderComponentsMenu()
-	local isArmored = false
-	local playerArmour = GetPedArmour(GetPlayerPed(-1))
-	if playerArmour > 0 then 
-		isArmored = true 
-	end
-	RageUI.DrawContent({header = true, instructionalButton = true}, function()
-		if isArmored then
-			RageUI.Button(_U('dismount_kevlar', playerArmour), "", {}, true, function(Hovered, Active, Selected)
-				if (Selected) then
-					TriggerServerEvent('atlantis_kevlar:armourRemove', playerArmour)
-					RageUI.CloseAll()
-				end
-			end)
-		end
-	end)
-end
-
-function RenderDocumentsMenu()
-	RageUI.DrawContent({header = true, instructionalButton = true}, function()
-		RageUI.CloseAll()
-		TriggerEvent('esx_documents:OpenMainMenu')
-	end)
-end
-
 function RenderAdminMenu()
 	RageUI.DrawContent({header = true, instructionalButton = true}, function()
 		for i = 1, #Config.Admin, 1 do
@@ -931,20 +1010,12 @@ Citizen.CreateThread(function()
 			RenderWalletMenu()
 		end
 
-		if RageUI.Visible(RMenu.Get('personal', 'documents')) then
-			RenderDocumentsMenu()
-		end
-
 		if RageUI.Visible(RMenu.Get('personal', 'billing')) then
 			RenderBillingMenu()
 		end
 
 		if RageUI.Visible(RMenu.Get('personal', 'clothes')) then
 			RenderClothesMenu()
-		end
-
-		if RageUI.Visible(RMenu.Get('personal', 'components')) then
-			RenderComponentsMenu()
 		end
 
 		if RageUI.Visible(RMenu.Get('personal', 'accessories')) then
